@@ -15,9 +15,16 @@ a server presenting SLH-DSA certificates may be a severe amplifier.
 
 ## Status
 
-Design phase. Pre-registered design (research questions, threat model, configurations, hypotheses,
-methodology) in [`docs/EXPERIMENT-DESIGN.md`](docs/EXPERIMENT-DESIGN.md). Hypotheses are fixed **before**
-data collection.
+Model + benchmarks implemented; first results in. Pre-registered design in
+[`docs/EXPERIMENT-DESIGN.md`](docs/EXPERIMENT-DESIGN.md); full results in
+[`results/RESULTS.md`](results/RESULTS.md).
+
+**Headline (exploratory macOS/arm64 host):** PQC does **not** uniformly widen the TLS server DoS
+surface. ML-KEM key exchange is DoS-neutral-to-favorable (32 µs, faster than X25519's 77 µs), and
+ML-DSA authentication is a modest ~2–3× factor over ECDSA — and *cheaper than RSA*. The DoS risk is
+concentrated in **SLH-DSA authentication**: ~39 ms and **8.6 MB allocated per handshake**, collapsing
+server capacity to **~26 handshakes/sec/core (vs ~4,983 classical)** — a ~190× amplifier. SLH-DSA
+should not be used for per-handshake interactive server auth under DoS exposure.
 
 ## Configurations
 

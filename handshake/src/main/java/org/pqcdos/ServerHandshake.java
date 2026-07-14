@@ -15,17 +15,34 @@ public final class ServerHandshake {
     /** TLS 1.3 CertificateVerify signs a fixed-size transcript hash input; 64 bytes is representative. */
     private static final int TRANSCRIPT_BYTES = 64;
 
+    /**
+     * A pool of distinct transcripts, rotated per handshake. This is important because ML-DSA signing
+     * time is message-dependent (rejection sampling), so signing one fixed transcript repeatedly gives
+     * a single, unrepresentative sample; rotating over a pool averages over that variance and models a
+     * real server signing a different transcript on every handshake. Size is a power of two for a cheap
+     * masked cursor.
+     */
+    private static final int TRANSCRIPT_POOL = 128;
+
     private final KeyExchangeServer kex;
     private final ServerAuth auth;
     private final byte[] clientShare;
-    private final byte[] transcript;
+    private final byte[][] transcripts;
+    private int cursor;
 
     public ServerHandshake(KeyExchangeServer kex, ServerAuth auth) {
         this.kex = kex;
         this.auth = auth;
         this.clientShare = kex.clientKeyShare();
-        this.transcript = new byte[TRANSCRIPT_BYTES];
-        new DeterministicSecureRandom(99).nextBytes(transcript);
+        this.transcripts = new byte[TRANSCRIPT_POOL][TRANSCRIPT_BYTES];
+        DeterministicSecureRandom rng = new DeterministicSecureRandom(99);
+        for (byte[] t : transcripts) {
+            rng.nextBytes(t);
+        }
+    }
+
+    private byte[] nextTranscript() {
+        return transcripts[cursor++ & (TRANSCRIPT_POOL - 1)];
     }
 
     public String kexName() {
@@ -52,7 +69,7 @@ public final class ServerHandshake {
     /** Full server per-handshake work: key exchange then authentication signature. */
     public long perform() {
         byte[] sharedSecret = kex.serverKeyExchange(clientShare);
-        byte[] signature = auth.sign(transcript);
+        byte[] signature = auth.sign(nextTranscript());
         return (long) sharedSecret.length + signature.length;
     }
 
@@ -63,6 +80,6 @@ public final class ServerHandshake {
 
     /** Just the server authentication signature (for cost attribution). */
     public byte[] performAuth() {
-        return auth.sign(transcript);
+        return auth.sign(nextTranscript());
     }
 }

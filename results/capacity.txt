@@ -1,0 +1,10 @@
+Sustained server capacity (full handshakes/second)
+configuration (kex + auth)                       1 thread      8 threads
+------------------------------------------------------------------------
+x25519 + ecdsa-p256                                 4,983         25,437
+x25519 + rsa-2048                                   1,027          5,301
+ml-kem-768 + ml-dsa-65                              1,891          9,432
+ml-kem-768 + slh-dsa-sha2-128f                         26            144
+hybrid-x25519-mlkem768 + ml-dsa-65                  1,634          8,251
+------------------------------------------------------------------------
+Higher = harder to saturate. Lower numbers are cheaper to DoS.
